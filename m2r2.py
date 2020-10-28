@@ -109,6 +109,7 @@ class RestInlineGrammar(mistune.InlineGrammar):
         r"\[!\[(?P<alt>.*?)\]\((?P<url>.*?)\).*?\]\((?P<target>.*?)\)"
     )
     rest_role = re.compile(r":.*?:`.*?`|`[^`]+`:.*?:")
+    task_list = re.compile(r'(?P<checkbox>\[[xX ]\] )')#(?P<text>.*)')
     rest_link = re.compile(r"`[^`]*?`_")
     inline_math = re.compile(r"`\$(.*)?\$`")
     eol_literal_marker = re.compile(r"(\s+)?::\s*$")
@@ -137,6 +138,7 @@ class RestInlineLexer(mistune.InlineLexer):
         "rest_role",
         "rest_link",
         "eol_literal_marker",
+	"task_list"
     ] + mistune.InlineLexer.default_rules
 
     def __init__(self, *args, **kwargs):
@@ -169,6 +171,16 @@ class RestInlineLexer(mistune.InlineLexer):
         return self.renderer.image_link(
             m.group("url"), m.group("target"), m.group("alt")
         )
+
+    def output_task_list(self, m):
+        """Pass through rest role."""
+        try:
+            if m.group()[1].lower() == 'x':
+                return self.renderer.task_list_checked(m.group(0))
+            return self.renderer.task_list_unchecked(m.group(0))
+        except:
+            pass
+        return self.renderer.task_list_unchecked(m.group(0))
 
     def output_rest_role(self, m):
         """Pass through rest role."""
@@ -213,6 +225,16 @@ class RestRenderer(mistune.Renderer):
             if getattr(options, "anonymous_references", False):
                 self.anonymous_references = options.anonymous_references
 
+
+    def task_list_checked(self, text):
+        return u'\u2611' + " "
+        return self.inline_html('<input type="checkbox" class="task-list-item-checkbox" checked="" disabled="" /> ')
+    
+    def task_list_unchecked(self, text):
+        return u'\u2610' + " "
+        return self.inline_html('<input type="checkbox" class="task-list-item-checkbox" disabled="" /> ')
+
+    
     def _indent_block(self, block):
         return "\n".join(
             self.indent + line if line else "" for line in block.splitlines()
@@ -225,6 +247,8 @@ class RestRenderer(mistune.Renderer):
     def block_code(self, code, lang=None):
         if lang == "math":
             first_line = "\n.. math::\n\n"
+        elif lang == "mermaid":
+            first_line = "\n.. mermaid::\n\n"
         elif lang:
             first_line = "\n.. code-block:: {}\n\n".format(lang)
         elif _is_sphinx:
