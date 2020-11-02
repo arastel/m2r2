@@ -15,6 +15,7 @@ from docutils.core import ErrorString
 from docutils.parsers import rst
 from docutils.utils import SafeString, column_width
 from pkg_resources import get_distribution
+from toc import TocMixin
 
 __version__ = get_distribution("m2r2").version
 
@@ -30,6 +31,22 @@ _is_sphinx = False
 prolog = """\
 .. role:: raw-html-m2r(raw)
    :format: html
+
+.. |check| raw:: html
+
+    <input checked=""  type="checkbox">
+
+.. |check_| raw:: html
+
+    <input checked=""  disabled="" type="checkbox">
+
+.. |uncheck| raw:: html
+
+    <input type="checkbox">
+
+.. |uncheck_| raw:: html
+
+    <input disabled="" type="checkbox">
 
 """
 
@@ -227,10 +244,14 @@ class RestRenderer(mistune.Renderer):
 
 
     def task_list_checked(self, text):
+        self._include_raw_html = True
+        return '|check_| '
         return u'\u2611' + " "
         return self.inline_html('<input type="checkbox" class="task-list-item-checkbox" checked="" disabled="" /> ')
     
     def task_list_unchecked(self, text):
+        self._include_raw_html = True
+        return '|uncheck_| '
         return u'\u2610' + " "
         return self.inline_html('<input type="checkbox" class="task-list-item-checkbox" disabled="" /> ')
 
@@ -538,6 +559,16 @@ class RestRenderer(mistune.Renderer):
 
     def rest_code_block(self):
         return "\n\n"
+
+
+class TocRenderer(TocMixin, mistune.Renderer):
+            pass
+        toc = TocRenderer()
+        md = mistune.Markdown(renderer=toc)
+        # required in this order
+        toc.reset_toc()          # initial the status
+        md.parse(text)           # parse for headers
+        toc.render_toc(level=3)  # render TOC HTML
 
 
 class M2R(mistune.Markdown):
