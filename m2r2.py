@@ -15,7 +15,7 @@ from docutils.core import ErrorString
 from docutils.parsers import rst
 from docutils.utils import SafeString, column_width
 from pkg_resources import get_distribution
-from toc import TocMixin
+#from toc import TocMixin
 
 __version__ = get_distribution("m2r2").version
 
@@ -559,16 +559,6 @@ class RestRenderer(mistune.Renderer):
 
     def rest_code_block(self):
         return "\n\n"
-
-
-class TocRenderer(TocMixin, mistune.Renderer):
-            pass
-        toc = TocRenderer()
-        md = mistune.Markdown(renderer=toc)
-        # required in this order
-        toc.reset_toc()          # initial the status
-        md.parse(text)           # parse for headers
-        toc.render_toc(level=3)  # render TOC HTML
 
 
 class M2R(mistune.Markdown):
